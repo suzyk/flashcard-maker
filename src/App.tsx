@@ -2,25 +2,39 @@ import { useState } from "react";
 import Button from "./components/ui/Button";
 
 function App() {
+  type Flashcard = {
+    id: string;
+    image: File;
+    vocab: string;
+  };
+
   const [cardType, setCardType] = useState<string>("imageCard");
-  //const [image, setImage] = useState<File | null>(null);
-  const [images, setImages] = useState<File[]>([]);
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
 
   const handleCardChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setCardType(event.target.value);
   };
 
+  const handleMakeFlashcard = (event: React.MouseEvent<HTMLButtonElement>) => {
+    console.log("button clicked");
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      // Access the first selected file
-      //console.log(e.target.files);
-      //setImage(e.target.files[0]);
-      setImages(Array.from(e.target.files));
+      //setImages(Array.from(e.target.files));
+      const newCards = Array.from(e.target.files).map((file) => ({
+        id: crypto.randomUUID(),
+        image: file,
+        vocab: "",
+      }));
+
+      setFlashcards((prev) => [...prev, ...newCards]);
     }
   };
 
-  const doSomething = (e: React.MouseEventHandler<HTMLButtonElement>) => {
-    //do something
+  const handleRemove = (cardIdToRemove: string) => {
+    //setImages((prev) => prev.filter((image) => image !== imagetoRemove));
+    setFlashcards((prev) => prev.filter((card) => card.id !== cardIdToRemove));
   };
 
   return (
@@ -54,44 +68,54 @@ function App() {
           />
 
           {/* Custom upload area */}
-          {images.length == 0 ? (
-            <div>
-              <label
-                htmlFor="image-upload"
-                className=" flex flex-col items-center justify-center 
-                        max-w-2xs h-64 border-2 border-dashed border-indigo-300 
+          <div>
+            <label
+              htmlFor="image-upload"
+              className=" flex flex-col items-center justify-center mt-3.5 mb-5
+                        max-w-full h-40 border-2 border-dashed border-indigo-300 
                         rounded-2xl cursor-pointer hover:border-indigo-500 
                         hover:bg-indigo-50 transition"
-              >
-                <p className="text-lg font-medium text-gray-700">
-                  Click to upload
-                </p>
+            >
+              <p className="text-lg font-medium text-gray-700">
+                Click to upload
+              </p>
 
-                <p className="text-sm text-gray-400 mt-2">PNG, JPG, WEBP</p>
-              </label>
-            </div>
-          ) : (
-            <ul className="max-w-2xs">
-              {images.map((image, index) => (
-                <li key={index}>
-                  <img
-                    src={URL.createObjectURL(image)}
-                    alt="Preview"
-                    className="w-full h-full object-cover rounded-2xl"
-                  />
-                  <div className="flex justify-between items-center mt-4">
-                    <p className="text-sm text-gray-500 truncate">
-                      {image.name}
-                    </p>
+              <p className="text-sm text-gray-400 mt-2">PNG, JPG, WEBP</p>
+            </label>
+          </div>
+          {/** Images grid */}
+          <ul className="flex flex-wrap gap-4">
+            {flashcards.map((card, index) => (
+              <li key={index} className="max-w-48 m-3.5">
+                <img
+                  src={URL.createObjectURL(card.image)}
+                  alt="Preview"
+                  className="w-full h-40 object-cover rounded-2xl"
+                />
+                <div className="flex-col justify-between items-center">
+                  <p className="text-sm text-gray-500 truncate">
+                    {card.image.name}
+                  </p>
 
-                    <Button variant="danger" onClick={() => doSomething}>
-                      Remove
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+                  <Button
+                    variant="danger"
+                    onClick={() => handleRemove(card.id)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+        {/** Make Flahscards button */}
+        <div className="flex justify-center m-2.5">
+          <button
+            className="bg-indigo-500 rounded-4xl p-3.5 w-2xs text-white font-medium hover:bg-indigo-600"
+            onClick={handleMakeFlashcard}
+          >
+            Make Flashcards
+          </button>
         </div>
       </div>
     </div>
