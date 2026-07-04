@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Button from "./components/ui/Button";
+import { jsPDF } from "jspdf";
 
 function App() {
   type Flashcard = {
@@ -15,21 +16,50 @@ function App() {
     setCardType(event.target.value);
   };
 
-  const handleMakeFlashcard = (event: React.MouseEvent<HTMLButtonElement>) => {
-    console.log("button clicked");
+  const convertToBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const fileReader = new FileReader();
+      fileReader.onload = () => resolve(fileReader.result as string);
+      fileReader.onerror = reject;
+      // start the process
+      fileReader.readAsDataURL(file);
+    });
+
+  const handleMakeFlashcard = async (
+    _event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    // Standard A4 dimensions in mm: 210 x 297
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    // foreach is not safe for "await"
+    // for (const card of flashcards) => also SAFE : sequential, waits properly
+    for (let i = 0; i < flashcards.length; i++) {
+      const card = flashcards[i];
+
+      const imgData = await convertToBase64(card.image);
+
+      if (i > 0) pdf.addPage();
+
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+    }
+
+    // Save/Download the file locally
+    pdf.save("converted_images.pdf");
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      //setImages(Array.from(e.target.files));
-      const newCards = Array.from(e.target.files).map((file) => ({
-        id: crypto.randomUUID(),
-        image: file,
-        vocab: "",
-      }));
+    if (!e.target.files) return;
 
-      setFlashcards((prev) => [...prev, ...newCards]);
-    }
+    //setImages(Array.from(e.target.files));
+    const newCards = Array.from(e.target.files).map((file) => ({
+      id: crypto.randomUUID(),
+      image: file,
+      vocab: "",
+    }));
+
+    setFlashcards((prev) => [...prev, ...newCards]);
   };
 
   const handleRemove = (cardIdToRemove: string) => {
@@ -111,8 +141,9 @@ function App() {
         {/** Make Flahscards button */}
         <div className="flex justify-center m-2.5">
           <button
-            className="bg-indigo-500 rounded-4xl p-3.5 w-2xs text-white font-medium hover:bg-indigo-600"
+            className="rounded-4xl p-3.5 w-2xs font-medium bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 disabled:hover:bg-indigo-500"
             onClick={handleMakeFlashcard}
+            disabled={flashcards.length === 0}
           >
             Make Flashcards
           </button>
