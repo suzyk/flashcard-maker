@@ -9,11 +9,19 @@ function App() {
     vocab: string;
   };
 
-  const [cardType, setCardType] = useState<string>("imageCard");
+  // union type
+  //type CardType = "image" | "imageTextBack" | "imageTextFront";
+
+  // as const makes the items in array as readonly values that are visible everywhere
+  const CARD_TYPES = ["image", "imageTextBack", "imageTextFront"] as const;
+  // takes the content of this const as type
+  type CardType = (typeof CARD_TYPES)[number];
+
+  const [cardType, setCardType] = useState<CardType>("image");
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
 
   const handleCardChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setCardType(event.target.value);
+    setCardType(event.target.value as CardType);
   };
 
   const convertToBase64 = (file: File) =>
@@ -32,6 +40,8 @@ function App() {
     const pdf = new jsPDF("p", "mm", "a4");
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
+    const cardWidth = pdfWidth / 2 - 10;
+    const cardHeight = pdfHeight / 4 - 10;
 
     // foreach is not safe for "await"
     // for (const card of flashcards) => also SAFE : sequential, waits properly
@@ -40,9 +50,17 @@ function App() {
 
       const imgData = await convertToBase64(card.image);
 
-      if (i > 0) pdf.addPage();
+      // add a new page after every 4 cards
+      if (i > 0 && i % 4 == 0) pdf.addPage();
 
-      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(
+        imgData,
+        "JPEG",
+        0,
+        (i % 4) * cardHeight,
+        cardWidth,
+        cardHeight,
+      );
     }
 
     // Save/Download the file locally
@@ -80,8 +98,11 @@ function App() {
             value={cardType}
             onChange={handleCardChange}
           >
-            <option value="imageCard">Front Image Back Text</option>
-            <option value="imageTextCard">Front Image/Text</option>
+            {CARD_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -93,6 +114,7 @@ function App() {
             id="image-upload"
             type="file"
             multiple
+            accept=".jpg,.jpeg,.png"
             className="hidden"
             onChange={handleImageChange}
           />
@@ -110,7 +132,7 @@ function App() {
                 Click to upload
               </p>
 
-              <p className="text-sm text-gray-400 mt-2">PNG, JPG, WEBP</p>
+              <p className="text-sm text-gray-400 mt-2">PNG, JPG, JPEG</p>
             </label>
           </div>
           {/** Images grid */}
